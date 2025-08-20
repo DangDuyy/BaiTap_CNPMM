@@ -27,10 +27,9 @@ async function createNewUser(data) {
 /** READ ONE */
 async function getUserInfoById(userId) {
   const user = await db.User.findOne({
-    where: { id: userId },
-    raw: true,
+    where: { id: userId }
   });
-  return user ?? null; // rõ nghĩa hơn [] cho findOne
+  return user ?? null;
 }
 
 /** READ ALL */
@@ -40,7 +39,8 @@ async function getAllUser() {
 
 /** UPDATE */
 async function updateUser(data) {
-  const user = await db.User.findOne({ where: { id: data.id } });
+  console.log('Dữ liệu nhận được khi cập nhật:', data);
+  const user = await db.User.findOne({ where: { id: Number(data.id) } });
   if (!user) return null;
 
   user.email = data.email;
@@ -50,10 +50,12 @@ async function updateUser(data) {
   user.phoneNumber = data.phoneNumber;
   user.gender = data.gender === '1' || data.gender === 1;
   user.roleId = data.roleId;
+  user.image = data.image || user.image;
+  user.positionId = data.positionId || user.positionId;
   await user.save();
 
-  // nếu cần danh sách sau update:
-  return await db.User.findAll({ raw: true });
+  // Trả về true nếu thành công
+  return true;
 }
 
 /** DELETE */
