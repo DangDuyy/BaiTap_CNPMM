@@ -1,0 +1,87 @@
+// controller/homeController.js  (ESM)
+import db from '../models/index.ts';
+import CRUDService from '../services/CRUDService.ts';
+import type { Request, Response, NextFunction } from 'express';
+
+// Trang chủ: demo lấy user và render
+async function getHomePage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await db.User.findAll({ raw: true });
+    return res.render('homepage.ejs', { data: JSON.stringify(data) });
+  } catch (err) { next(err); }
+}
+
+// Trang about
+function getAboutPage(req: Request, res: Response) {
+  return res.render('test/about.ejs');
+}
+
+// Form CRUD
+function getCRUD(req: Request, res: Response) {
+  return res.render('crud.ejs');
+}
+
+// List all users
+async function getFindAllCrud(req: Request, res: Response, next: NextFunction) {
+  try {
+    const data = await CRUDService.getAllUser();
+    return res.render('users/findAllUser.ejs', { datalist: data });
+  } catch (err) { next(err); }
+}
+
+// Create user
+async function postCRUD(req: Request, res: Response, next: NextFunction) {
+  try {
+    const msg = await CRUDService.createNewUser(req.body);
+    console.log(msg);
+    // sau khi tạo xong quay lại trang danh sách
+    return res.redirect('/get-crud');
+  } catch (err) { next(err); }
+}
+
+// Lấy data để edit
+async function getEditCRUD(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = req.query.id;
+    if (!userId) return res.status(400).send('Missing id');
+
+    const userData = await CRUDService.getUserInfoById(userId);
+    if (!userData) return res.status(404).send('User not found');
+
+    return res.render('users/editUser.ejs', { data: userData });
+  } catch (err) { next(err); }
+}
+
+// Update user
+async function putCRUD(req: Request, res: Response, next: NextFunction) {
+  try {
+    const ok = await CRUDService.updateUser(req.body);
+    if (!ok) return res.status(404).send('User not found');
+    // Sau khi cập nhật thành công, chuyển về danh sách user
+    return res.redirect('/get-crud');
+  } catch (err) { next(err); }
+}
+
+// Delete user
+async function deleteCRUD(req: Request, res: Response, next: NextFunction) {
+  try {
+    const id = req.query.id; // ?id=1
+    if (!id) return res.status(400).send('Missing id');
+
+    const rows = await CRUDService.deleteUserById(id);
+    if (rows === 0) return res.status(404).send('Not find user');
+
+    return res.redirect('/get-crud');
+  } catch (err) { next(err); }
+}
+
+export default {
+  getHomePage,
+  getAboutPage,
+  getCRUD,
+  getFindAllCrud,
+  postCRUD,
+  getEditCRUD,
+  putCRUD,
+  deleteCRUD,
+};
