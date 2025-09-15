@@ -100,29 +100,106 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       )}
 
       {/* Pagination Controls */}
-      {typeof onPageChange === 'function' && (
+      {typeof onPageChange === "function" && (
         <div className="py-6">
           <div className="flex items-center justify-center">
-            {/* simple numeric pagination */}
-            <div className="space-x-2">
-              {Array.from({ length: Math.max(1, Math.ceil(total / itemsPerPage)) }).map((_, i) => {
-                const p = i + 1
-                const active = p === page
-                return (
+            {(() => {
+              const totalPages = Math.max(1, Math.ceil(total / itemsPerPage))
+              const goTo = (p) => onPageChange(Math.min(totalPages, Math.max(1, p)))
+              const canPrev = page > 1
+              const canNext = page < totalPages
+
+              // Tạo mảng hiển thị trang với dấu "…"
+              const getRange = (current, last, delta = 1) => {
+                // luôn hiện: 1, last, current +/- delta
+                const range = []
+                const left = Math.max(2, current - delta)
+                const right = Math.min(last - 1, current + delta)
+
+                range.push(1)
+                if (left > 2) range.push("...")
+                for (let i = left; i <= right; i++) range.push(i)
+                if (right < last - 1) range.push("...")
+                if (last > 1) range.push(last)
+                return Array.from(new Set(range)) // phòng trùng khi last nhỏ
+              }
+
+              const pages = getRange(page, totalPages, 1)
+
+              return (
+                <div className="flex items-center gap-2">
+                  {/* First */}
                   <Button
-                    key={p}
-                    size={active ? 'default' : 'icon'}
-                    variant={active ? 'outline' : 'ghost'}
-                    onClick={() => onPageChange(p)}
+                    size="icon"
+                    variant="ghost"
+                    aria-label="First page"
+                    disabled={!canPrev}
+                    onClick={() => goTo(1)}
                   >
-                    {p}
+                    {/* lucide-react */}
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 6 11 12 17 18"/><path d="M7 6v12"/></svg>
                   </Button>
-                )
-              })}
-            </div>
+
+                  {/* Prev */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Previous page"
+                    disabled={!canPrev}
+                    onClick={() => goTo(page - 1)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m15 18-6-6 6-6"/></svg>
+                  </Button>
+
+                  {/* Numeric */}
+                  <div className="space-x-2">
+                    {pages.map((p, idx) =>
+                      p === "..." ? (
+                        <Button key={`ellipsis-${idx}`} size="icon" variant="ghost" disabled>
+                          …
+                        </Button>
+                      ) : (
+                        <Button
+                          key={p}
+                          size={p === page ? "default" : "icon"}
+                          variant={p === page ? "outline" : "ghost"}
+                          aria-current={p === page ? "page" : undefined}
+                          onClick={() => goTo(p)}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
+                  </div>
+
+                  {/* Next */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Next page"
+                    disabled={!canNext}
+                    onClick={() => goTo(page + 1)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6-6"/></svg>
+                  </Button>
+
+                  {/* Last */}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Last page"
+                    disabled={!canNext}
+                    onClick={() => goTo(totalPages)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m7 6 6 6-6 6"/><path d="M17 6v12"/></svg>
+                  </Button>
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}
+
 
       {/* Results Summary */}
       <div className="flex items-center justify-between text-sm text-muted-foreground border-t border-border pt-4">
