@@ -480,6 +480,8 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md p-0 gap-0">
+        {/* Provide a DialogTitle for accessibility; hide visually since CardTitle is used inside */}
+        <DialogTitle className="sr-only">Authentication</DialogTitle>
         {mode === 'login' && renderLoginForm()}
         {mode === 'register' && renderRegisterForm()}
         {mode === 'forgot' && renderForgotPasswordForm()}

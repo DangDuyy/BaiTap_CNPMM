@@ -15,25 +15,91 @@ const Index = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [products, setProducts] = useState<any[]>([])
+  const [page, setPage] = useState<number>(1)
+  const [itemsPerPage] = useState<number>(12)
+  const [total, setTotal] = useState<number>(0)
+  const [loading, setLoading] = useState<boolean>(false)
+  const [hasMore, setHasMore] = useState<boolean>(false)
 
+  const buildParams = (p: number) => {
+    const params: Record<string, unknown> = { page: p, itemsPerPage }
+    if (searchTerm) params.q = searchTerm
+    if (filters.category && filters.category !== 'All Categories') params.category = filters.category
+    if (filters.inStock !== undefined) params.inStock = filters.inStock
+    if (filters.onSale !== undefined) params.onSale = filters.onSale
+    if (filters.priceRange) {
+      params.minPrice = filters.priceRange[0]
+      params.maxPrice = filters.priceRange[1]
+    }
+    if (filters.minRating) params.minRating = filters.minRating
+    if (filters.sortBy) params.sortBy = filters.sortBy
+    if (filters.sortOrder) params.sortOrder = filters.sortOrder
+    return params
+  }
+
+  const fetchProducts = async (opts: { append?: boolean } = {}) => {
+    setLoading(true)
+    const targetPage = opts.append ? page + 1 : 1
+    try {
+      const res = await api.get('/products', { params: buildParams(targetPage) })
+      const data = res.data || {}
+      const items = data.items || []
+      const t = data.total ?? items.length
+      if (opts.append) {
+        setProducts(prev => [...prev, ...items])
+        setPage(targetPage)
+      } else {
+        setProducts(items)
+        setPage(1)
+      }
+      setTotal(t)
+      setHasMore((prevListLength => ( (opts.append ? products.length + items.length : items.length) < t)) )
+    } catch (err) {
+      // fallback: use mock products on error
+      console.warn('Could not fetch products from server, using mock data', err)
+      setProducts(mockProducts)
+      setTotal(mockProducts.length)
+      setHasMore(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // fetch on mount and when filters/search change
   useEffect(() => {
     let mounted = true
-    const fetchProducts = async () => {
+    if (mounted) fetchProducts({ append: false })
+    return () => { mounted = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, filters])
+
+  // For ProductGrid we already pass loading/hasMore and onLoadMore
+  const filteredProducts = products
+
+  const handleLoadMore = () => {
+    fetchProducts({ append: true })
+  }
+
+  const handlePageChange = (p: number) => {
+    // fetch specific page
+    const fetchPage = async () => {
+      setLoading(true)
       try {
-        const res = await api.get('/products')
-        if (mounted) setProducts(res.data.items || res.data || [])
+        const res = await api.get('/products', { params: buildParams(p) })
+        const data = res.data || {}
+        const items = data.items || []
+        setProducts(items)
+        setPage(p)
+        setTotal(data.total ?? items.length)
+        setHasMore(items.length < (data.total ?? items.length))
       } catch (err) {
-        // fallback to mock data
-        setProducts(mockProducts)
+        console.warn('Could not fetch page', p, err)
+      } finally {
+        setLoading(false)
       }
     }
-    fetchProducts()
-    return () => { mounted = false }
-  }, [])
-
-  const filteredProducts = useMemo(() => {
-    return filterProducts(products, searchTerm, filters);
-  }, [products, searchTerm, filters]);
+    fetchPage()
+  }
 
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product);
@@ -85,7 +151,14 @@ const Index = () => {
           {/* Product Grid */}
           <ProductGrid
             products={filteredProducts}
+            loading={loading}
+            hasMore={hasMore}
+            onLoadMore={handleLoadMore}
             onProductSelect={handleProductSelect}
+            page={page}
+            total={total}
+            itemsPerPage={itemsPerPage}
+            onPageChange={handlePageChange}
           />
         </div>
       </main>

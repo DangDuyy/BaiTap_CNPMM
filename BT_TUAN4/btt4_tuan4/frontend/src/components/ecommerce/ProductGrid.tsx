@@ -10,6 +10,11 @@ interface ProductGridProps {
   hasMore?: boolean;
   onLoadMore?: () => void;
   onProductSelect?: (product: Product) => void;
+  // pagination
+  page?: number;
+  total?: number;
+  itemsPerPage?: number;
+  onPageChange?: (page: number) => void;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
@@ -18,8 +23,19 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   hasMore = false,
   onLoadMore,
   onProductSelect,
+  page = 1,
+  total = 0,
+  itemsPerPage = 12,
+  onPageChange,
 }) => {
   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+
+  const getProductKey = (product: Product, index: number) => {
+    if (product.id) return product.id;
+    const p = product as unknown as Record<string, unknown>;
+    if (typeof p._id === 'string') return p._id;
+    return String(index);
+  }
 
   useEffect(() => {
     setDisplayedProducts(products);
@@ -45,7 +61,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {displayedProducts.map((product, index) => (
           <div
-            key={product.id}
+            key={getProductKey(product, index)}
             className="animate-fade-in"
             style={{
               animationDelay: `${index * 0.1}s`,
@@ -70,7 +86,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
       )}
 
       {/* Load More Button */}
-      {hasMore && !loading && (
+      {hasMore && !loading && onLoadMore && (
         <div className="flex justify-center">
           <Button
             onClick={onLoadMore}
@@ -80,6 +96,31 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
           >
             Load More Products
           </Button>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {typeof onPageChange === 'function' && (
+        <div className="py-6">
+          <div className="flex items-center justify-center">
+            {/* simple numeric pagination */}
+            <div className="space-x-2">
+              {Array.from({ length: Math.max(1, Math.ceil(total / itemsPerPage)) }).map((_, i) => {
+                const p = i + 1
+                const active = p === page
+                return (
+                  <Button
+                    key={p}
+                    size={active ? 'default' : 'icon'}
+                    variant={active ? 'outline' : 'ghost'}
+                    onClick={() => onPageChange(p)}
+                  >
+                    {p}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
 

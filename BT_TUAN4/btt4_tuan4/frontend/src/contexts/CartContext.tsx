@@ -214,7 +214,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // basic validation: ensure itemId looks like a Mongo ObjectId
     if (!/^[0-9a-fA-F]{24}$/.test(itemId)) {
       console.warn('[cart][client] removeItem: id does not look like ObjectId:', itemId)
-      // still attempt, backend will return a clear error
+      toast({ title: 'Cannot remove item', description: 'Item id appears invalid for server. Try refreshing the page or remove from server-side cart.', duration: 3000 })
+      return
     }
     try {
       const res = await api.delete(`/carts/${itemId}`);
@@ -224,6 +225,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       dispatch({ type: 'SET_CART', payload: mapped });
       toast({ title: 'Removed from cart', description: `${item.product.name} has been removed from your cart.`, duration: 2000 });
     } catch (err: unknown) {
+      console.error('[cart][client] removeItem error:', err)
       toast({ title: 'Could not remove item', description: getErrorMessage(err), duration: 3000 });
     }
   };
