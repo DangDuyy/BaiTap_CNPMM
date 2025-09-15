@@ -39,7 +39,7 @@ export interface CartContextType {
   totalPrice: number;
   addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   isOpen: boolean;
   toggleCart: () => void;

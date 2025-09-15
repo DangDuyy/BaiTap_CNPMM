@@ -86,7 +86,7 @@ export const CartSidebar: React.FC = () => {
                           size="icon"
                           variant="outline"
                           className="h-8 w-8 rounded-full"
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
@@ -97,7 +97,7 @@ export const CartSidebar: React.FC = () => {
                           size="icon"
                           variant="outline"
                           className="h-8 w-8 rounded-full"
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -110,7 +110,7 @@ export const CartSidebar: React.FC = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => removeItem(item.id)}
                           className="text-destructive hover:text-destructive h-auto p-0 text-xs mt-1"
                         >
                           Remove

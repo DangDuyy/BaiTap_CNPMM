@@ -113,22 +113,32 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!Array.isArray(items)) return [];
     return items.map((raw) => {
       const it = raw as Record<string, unknown>;
+      // productId may be populated (object) or a string id
+      let productIdVal = '';
+      let productDoc: Record<string, unknown> | null = null;
+      if (it.productId && typeof it.productId === 'object') {
+        productDoc = it.productId as Record<string, unknown>;
+        productIdVal = (productDoc._id as string) || (productDoc.id as string) || '';
+      } else if (it.productId && typeof it.productId === 'string') {
+        productIdVal = it.productId as string;
+      }
+
       const product: Product = {
-        id: (it.productId as string) || (it.productId as { toString?: () => string })?.toString?.() || '',
-        name: (it.name as string) || '',
-        price: (it.price as number) || 0,
-        image: (it.image as string) || '',
-        category: (it.category as string) || '',
-        description: (it.description as string) || '',
-        rating: (it.rating as number) || 0,
-        reviews: (it.reviews as number) || 0,
-        inStock: (it.inStock as boolean) ?? true,
-        tags: (it.tags as string[]) || [],
-        views: (it.views as number) || 0,
-        isOnSale: (it.isOnSale as boolean) || false,
+        id: productIdVal || '',
+        name: (productDoc && (productDoc.name as string)) || (it.name as string) || '',
+        price: (productDoc && (productDoc.price as number)) || (it.price as number) || 0,
+        image: (productDoc && (productDoc.image as string)) || (it.image as string) || '',
+        category: (productDoc && (productDoc.category as string)) || (it.category as string) || '',
+        description: (productDoc && (productDoc.description as string)) || (it.description as string) || '',
+        rating: (productDoc && (productDoc.rating as number)) || (it.rating as number) || 0,
+        reviews: (productDoc && (productDoc.reviews as number)) || (it.reviews as number) || 0,
+        inStock: (productDoc && (productDoc.inStock as boolean)) ?? ((it.inStock as boolean) ?? true),
+        tags: (productDoc && (productDoc.tags as string[])) || (it.tags as string[]) || [],
+        views: (productDoc && (productDoc.views as number)) || (it.views as number) || 0,
+        isOnSale: (productDoc && (productDoc.isOnSale as boolean)) || (it.isOnSale as boolean) || false,
       } as Product;
 
-      const id = (it._id as string) || (it.id as string) || product.id;
+      const id = (it._id as string) || (it.id as string) || (productIdVal) || product.id;
       const quantity = (it.quantity as number) || 1;
 
       return {
@@ -193,11 +203,22 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const removeItem = async (productId: string) => {
-    const item = state.items.find(item => item.product.id === productId);
-    if (!item) return;
+  const removeItem = async (itemId: string) => {
+    console.debug('[cart][client] removeItem called with id:', itemId)
+    console.debug('[cart][client] current items:', state.items.map(i => ({ id: i.id, productId: i.product.id })))
+    const item = state.items.find(i => i.id === itemId);
+    if (!item) {
+      console.warn('[cart][client] removeItem: item not found locally for id', itemId)
+      return;
+    }
+    // basic validation: ensure itemId looks like a Mongo ObjectId
+    if (!/^[0-9a-fA-F]{24}$/.test(itemId)) {
+      console.warn('[cart][client] removeItem: id does not look like ObjectId:', itemId)
+      // still attempt, backend will return a clear error
+    }
     try {
-      const res = await api.delete(`/carts/${item.id}`);
+      const res = await api.delete(`/carts/${itemId}`);
+      console.debug('[cart][client] removeItem server response:', res.data)
       const serverCart = res.data;
       const mapped = mapServerItems(serverCart.items);
       dispatch({ type: 'SET_CART', payload: mapped });
@@ -207,11 +228,19 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const updateQuantity = async (productId: string, quantity: number) => {
-    const item = state.items.find(item => item.product.id === productId);
-    if (!item) return;
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    console.debug('[cart][client] updateQuantity called with itemId:', itemId, 'quantity:', quantity)
+    const item = state.items.find(i => i.id === itemId);
+    if (!item) {
+      console.warn('[cart][client] updateQuantity: item not found locally for id', itemId)
+      return;
+    }
+    if (!/^[0-9a-fA-F]{24}$/.test(itemId)) {
+      console.warn('[cart][client] updateQuantity: id does not look like ObjectId:', itemId)
+    }
     try {
-      const res = await api.put(`/carts/${item.id}`, { quantity });
+      const res = await api.put(`/carts/${itemId}`, { quantity });
+      console.debug('[cart][client] updateQuantity server response:', res.data)
       const serverCart = res.data;
       const mapped = mapServerItems(serverCart.items);
       dispatch({ type: 'SET_CART', payload: mapped });
