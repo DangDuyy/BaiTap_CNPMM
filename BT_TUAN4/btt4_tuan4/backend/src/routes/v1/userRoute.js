@@ -19,6 +19,9 @@ Router.route('/refresh-token')
 Router.route('/logout')
   .delete(userController.logout)
 
+Router.route('/me')
+  .get(require('~/middlewares/authMiddleware').authMiddleware.isAuthorized, userController.me)
+
 Router.route('/send-otp')
   .post(userController.sendOtp)
 

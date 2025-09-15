@@ -110,6 +110,18 @@ export const userService = {
   refreshToken
 }
 
+const findById = async (id) => {
+  try {
+    const user = await userModel.findById(id).lean()
+    if (!user) return null
+    return pickUser(user)
+  } catch (error) {
+    throw error
+  }
+}
+
+userService.findById = findById
+
 
 // Extras for OTP / password reset
 const saveOtp = async (email, otp) => {

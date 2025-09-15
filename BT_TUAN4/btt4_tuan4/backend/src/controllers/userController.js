@@ -109,6 +109,17 @@ const resetPassword = async (req, res, next) => {
     res.status(StatusCodes.OK).json({ reset: true })
   } catch (error) { next(error) }
 }
+
+const me = async (req, res, next) => {
+  try {
+    const userId = req.jwtDecoded && req.jwtDecoded._id
+    if (!userId) return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Not authenticated' })
+    // fetch user info safe
+    const user = await userService.findById?.(userId)
+    if (!user) return res.status(StatusCodes.NOT_FOUND).json({ message: 'User not found' })
+    res.status(StatusCodes.OK).json(user)
+  } catch (error) { next(error) }
+}
 export const userController = {
   createNew,
   login,
@@ -116,4 +127,5 @@ export const userController = {
   logout,
   refreshToken
   , sendOtp, forgotPassword, resetPassword
+  , me
 }

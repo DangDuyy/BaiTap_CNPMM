@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
-import { ShoppingCart, User, Menu } from 'lucide-react';
+import { ShoppingCart, User, Menu, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AuthModals } from '@/components/auth/AuthModals';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { logout } from '@/redux/userSlice';
 
 export const EcommerceHeader: React.FC = () => {
   const { totalItems, toggleCart } = useCart();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot' | 'otp'>('login');
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.user.user);
 
   const openAuthModal = (mode: 'login' | 'register' | 'forgot' | 'otp' = 'login') => {
     setAuthMode(mode);
@@ -48,32 +54,70 @@ export const EcommerceHeader: React.FC = () => {
           {/* Actions */}
           <div className="flex items-center space-x-2">
             <div className="hidden md:flex items-center space-x-2">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => openAuthModal('login')}
-                className="text-foreground hover:text-primary"
-              >
-                Đăng nhập
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => openAuthModal('register')}
-                className="text-foreground hover:text-primary"
-              >
-                Đăng ký
-              </Button>
+              {!user ? (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => openAuthModal('login')}
+                    className="text-foreground hover:text-primary"
+                  >
+                    Đăng nhập
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => openAuthModal('register')}
+                    className="text-foreground hover:text-primary"
+                  >
+                    Đăng ký
+                  </Button>
+                </>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="flex items-center">
+                      <Avatar>
+                        <AvatarImage src={user?.avatar} alt={user?.name || 'User'} />
+                        <AvatarFallback>{(user?.name || 'U').charAt(0)}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onSelect={() => { dispatch(logout()); }}>
+                      <div className="flex items-center space-x-2"><LogOut className="h-4 w-4" /><span>Đăng xuất</span></div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => openAuthModal('login')}
-              className="md:hidden"
-            >
-              <User className="h-5 w-5" />
-            </Button>
+            {!user ? (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => openAuthModal('login')}
+                className="md:hidden"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden">
+                    <Avatar>
+                      <AvatarImage src={user?.avatar} alt={user?.name || 'User'} />
+                      <AvatarFallback>{(user?.name || 'U').charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onSelect={() => { dispatch(logout()); }}>
+                    <div className="flex items-center space-x-2"><LogOut className="h-4 w-4" /><span>Đăng xuất</span></div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             
             <Button 
               variant="ghost" 

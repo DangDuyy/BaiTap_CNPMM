@@ -9,7 +9,12 @@ const getOrCreateCart = async (userId) => {
 }
 
 const getCart = async (userId) => {
-  const cart = await getOrCreateCart(userId)
+  // return cart with populated product info for each item
+  let cart = await cartModel.findOne({ owner: userId }).populate('items.productId').lean()
+  if (!cart) {
+    await cartModel.create({ owner: userId, items: [] })
+    cart = await cartModel.findOne({ owner: userId }).populate('items.productId').lean()
+  }
   return cart
 }
 
@@ -28,7 +33,9 @@ const addItem = async (userId, productId, quantity = 1) => {
   }
 
   await cart.save()
-  return cart
+  // return populated cart
+  const populated = await cartModel.findOne({ owner: userId }).populate('items.productId').lean()
+  return populated
 }
 
 const updateItem = async (userId, itemId, quantity) => {
@@ -38,7 +45,8 @@ const updateItem = async (userId, itemId, quantity) => {
   if (quantity <= 0) item.remove()
   else item.quantity = quantity
   await cart.save()
-  return cart
+  const populated = await cartModel.findOne({ owner: userId }).populate('items.productId').lean()
+  return populated
 }
 
 const removeItem = async (userId, itemId) => {
@@ -46,14 +54,16 @@ const removeItem = async (userId, itemId) => {
   const item = cart.items.id(itemId)
   if (item) item.remove()
   await cart.save()
-  return cart
+  const populated = await cartModel.findOne({ owner: userId }).populate('items.productId').lean()
+  return populated
 }
 
 const clearCart = async (userId) => {
   const cart = await getOrCreateCart(userId)
   cart.items = []
   await cart.save()
-  return cart
+  const populated = await cartModel.findOne({ owner: userId }).populate('items.productId').lean()
+  return populated
 }
 
 export const cartService = { getCart, addItem, updateItem, removeItem, clearCart }

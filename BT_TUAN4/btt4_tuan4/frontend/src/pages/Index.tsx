@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Product } from '@/types/ecommerce';
 import { EcommerceHeader } from '@/components/ecommerce/EcommerceHeader';
 import { ProductFilters } from '@/components/ecommerce/ProductFilters';
@@ -6,16 +6,34 @@ import { ProductGrid } from '@/components/ecommerce/ProductGrid';
 import { CartSidebar } from '@/components/cart/CartSidebar';
 import { ProductDetailModal } from '@/components/ecommerce/ProductDetailModal';
 import { mockProducts, filterProducts } from '@/lib/products';
+import api from '@/lib/api';
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<Record<string, any>>({});
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [products, setProducts] = useState<any[]>([])
+
+  useEffect(() => {
+    let mounted = true
+    const fetchProducts = async () => {
+      try {
+        const res = await api.get('/products')
+        if (mounted) setProducts(res.data.items || res.data || [])
+      } catch (err) {
+        // fallback to mock data
+        setProducts(mockProducts)
+      }
+    }
+    fetchProducts()
+    return () => { mounted = false }
+  }, [])
+
   const filteredProducts = useMemo(() => {
-    return filterProducts(mockProducts, searchTerm, filters);
-  }, [searchTerm, filters]);
+    return filterProducts(products, searchTerm, filters);
+  }, [products, searchTerm, filters]);
 
   const handleProductSelect = (product: Product) => {
     setSelectedProduct(product);

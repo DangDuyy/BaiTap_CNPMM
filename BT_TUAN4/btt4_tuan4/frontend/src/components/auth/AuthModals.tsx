@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -12,6 +13,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
+import { useDispatch } from 'react-redux'
+import { AppDispatch } from '@/redux/store'
+import { login, forgotPassword, resetPassword } from '@/redux/userSlice'
+import api from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
 
 interface AuthModalsProps {
   isOpen: boolean;
@@ -37,6 +43,8 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
     lastName: '',
     phone: ''
   });
+  const dispatch = useDispatch<AppDispatch>()
+  const { toast } = useToast()
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -44,8 +52,39 @@ export const AuthModals: React.FC<AuthModalsProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect to backend logic
-    console.log('Form submitted:', { mode, formData, otp });
+    (async () => {
+      try {
+        if (mode === 'login') {
+          const res = await dispatch(login({ email: formData.email, password: formData.password }));
+          console.log('login action result', res);
+          if ((res as any)?.meta?.requestStatus === 'fulfilled') {
+            toast({ title: 'Đăng nhập thành công', duration: 2000 })
+            onClose()
+          }
+        }
+
+        if (mode === 'forgot') {
+          await dispatch(forgotPassword({ email: formData.email }))
+          toast({ title: 'Mã OTP đã được gửi (nếu tồn tại tài khoản)', duration: 3000 })
+          setMode('otp')
+        }
+
+        if (mode === 'otp') {
+          await dispatch(resetPassword({ email: formData.email, token: otp, newPassword: formData.password }))
+          toast({ title: 'Mật khẩu đã được đặt lại', duration: 2500 })
+          onClose()
+        }
+
+        if (mode === 'register') {
+          await api.post('/users/register', { email: formData.email, password: formData.password, username: formData.email })
+          toast({ title: 'Đăng ký thành công. Vui lòng kiểm tra email để xác thực', duration: 3000 })
+          onClose()
+        }
+      } catch (err: unknown) {
+        console.error(err)
+        toast({ title: 'Lỗi', description: 'Có lỗi xảy ra', duration: 3000 })
+      }
+    })()
   };
 
   const resetForm = () => {
