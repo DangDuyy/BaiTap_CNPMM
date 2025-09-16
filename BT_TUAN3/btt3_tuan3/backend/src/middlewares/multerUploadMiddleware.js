@@ -7,7 +7,8 @@ const customFileFilter = (req, file, callback) => {
   //doi voi multer, kiem tra kiem file thi su dung mimetype
   if (!ALLOW_COMMON_FILE_TYPES.includes (file.mimetype)) {
     const errMsg = 'File type is invalid. Only accept jpg, jpeg and png '
-    throw new Error(StatusCodes.UNPROCESSABLE_ENTITY, { message: errMsg })
+    // Use Multer's callback pattern to report an error to multer pipeline
+    return callback(new Error(errMsg))
   }
   //truong hop file hop le
   callback(null, true)

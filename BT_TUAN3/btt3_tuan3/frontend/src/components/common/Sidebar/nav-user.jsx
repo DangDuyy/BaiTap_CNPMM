@@ -29,12 +29,33 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { useSelector } from "react-redux"
-import { selectCurrentUser } from "@/redux/user/userSlice"
+import { useDispatch, useSelector } from "react-redux"
+import { clearCurrentUser, logoutUserAPI, selectCurrentUser } from "@/redux/user/userSlice"
+import { Link, useNavigate } from "react-router-dom"
+
 
 export function NavUser() {
   const { isMobile } = useSidebar()
   const user = useSelector(selectCurrentUser)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+    const onLogout = async () => {
+    try {
+      // Gọi API logout (nếu backend có xóa cookie/token server-side)
+      await dispatch(logoutUserAPI()).unwrap()
+    } catch (e) {
+      // có thể log hoặc bỏ qua, vì vẫn muốn clear local state
+      // console.error(e)
+    } finally {
+      // Clear Redux và điều hướng về trang login
+      dispatch(clearCurrentUser())
+      // Nếu bạn lưu token ở localStorage/sessionStorage, xoá luôn:
+      // localStorage.removeItem("accessToken")
+      navigate("/login", { replace: true })
+    }
+  }
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -83,8 +104,10 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck />
-                Account
+                <Link to="/settings/account" className="flex items-center gap-2 w-full">
+                  <BadgeCheck />
+                  Account
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
                 <CreditCard />
@@ -96,7 +119,7 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={onLogout} className="cursor-pointer">
               <LogOut />
               Log out
             </DropdownMenuItem>

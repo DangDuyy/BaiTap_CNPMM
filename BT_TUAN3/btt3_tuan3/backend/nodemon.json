@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "src/docs/*",
+    "src/docs/**"
+  ]
+}
